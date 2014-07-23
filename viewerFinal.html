@@ -1,0 +1,240 @@
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>PDB Viewer</title>
+      <style>
+         html, body {
+         width: 100%;
+         height: 100%;
+         }
+         body {
+         background-color: #ffffff;
+         margin: 0;
+         overflow: hidden;
+         font-family: arial;
+         }
+        
+         #instructions {
+         width: 100%;
+         height: 100%;
+         display: -webkit-bo x;
+         display: -moz-box;
+         display: box;
+         -webkit-box-orient: horizontal;
+         -moz-box-orient: horizontal;
+         box-orient: horizontal;
+         -webkit-box-pack: center;
+         -moz-box-pack: center;
+         box-pack: center;
+         -webkit-box-align: center;
+         -moz-box-align: center;
+         box-align: center;
+         color: #ffffff;
+         text-align: center;
+         cursor: pointer;
+         }
+      </style>
+
+
+      <script src='parserVDW.js'></script>
+      <script type="text/javascript">
+         var clearedFile;
+
+        
+   
+         
+      </script>
+      <script type="text/javascript">
+         function showButton() {
+             document.getElementById("buttonLoad").style.visibility="block";
+         };
+         
+      </script>
+      PDB name: <input id="pdbName" type="text"><br>
+
+         <script>
+         var pdbName;
+         
+         function loadPDB() {
+         
+             
+            pdbName = document.getElementById('pdbName').value;
+
+            $.get("http://rcsb.org/pdb/files/" + pdbName + ".pdb", function(response) {
+                clearedFile = clear(response);
+                console.log(clearedFile);
+
+            });
+            
+         }
+         </script>
+
+         <body>
+             
+
+         <!-- JavaScript libraries -->
+      <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> 
+      <script src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r67/three.min.js"></script>
+      <script src="http://cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats.min.js"></script>
+      <script src="http://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+      <script type="text/javascript" src="assets/fonts/helvetiker_regular.typeface.js"></script> 
+      <script type="text/javascript" src="assets/fonts/helvetiker_bold.typeface.js"></script> 
+      <script type="text/javascript" src="assets/fonts/bitstream_vera_sans_mono_roman.typeface.js"></script> 
+      <script src="assets/libs/TrackballControls.js"></script>
+
+      <script src="assets/libs/tween.min.js"></script>
+      <script src="assets/libs/builder.js"></script>
+      <script>
+         $(function () {
+             var atoms = new THREE.Object3D();
+
+             var scene = new THREE.Scene();
+             var axisHelper = new THREE.AxisHelper(10);
+             var spotLight = new THREE.SpotLight(0xffffff);
+
+             // create a camera, which defines where we're looking at.
+             var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+             var redTexture = THREE.ImageUtils.loadTexture("assets/textures/redCircle.png");
+             var greenTexture = THREE.ImageUtils.loadTexture("assets/textures/greenCircle.png");
+             var yellowTexture = THREE.ImageUtils.loadTexture("assets/textures/yellowCircle.png");
+             var blueTexture = THREE.ImageUtils.loadTexture("assets/textures/blueCircle.png");
+             var greyTexture = THREE.ImageUtils.loadTexture("assets/textures/greyCircle.png");
+             var neutralTexture = THREE.ImageUtils.loadTexture("assets/textures/g.png");
+         
+            
+             // create a render and set the size
+             var renderer = new THREE.WebGLRenderer();
+             renderer.shadowMapEnabled = true;
+
+             // create a projector
+             var projector = new THREE.Projector();
+             document.addEventListener('mousedown', onDocumentMouseDown, false);
+
+
+            // enable trackball controls
+            //  var trackballControls = new THREE.TrackballControls(camera);
+            // trackballControls.staticMoving = false;
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            
+             var buttonGeometry = new THREE.CircleGeometry(8, 32);
+             var button = createMesh(buttonGeometry, "buttonPlay.png");
+             button.rotation.y = -Math.PI / 4;
+             button.position.set(0,-12,0);
+             scene.add(button);
+
+             // directionalLight
+             var dirColor = "#ffffff";
+             var directionalLight = new THREE.DirectionalLight(dirColor);
+             directionalLight.position.set(-5, 0, 15);
+             scene.add(directionalLight);
+
+             renderer.setClearColor(new THREE.Color(0xffffff));
+             renderer.setSize(window.innerWidth, window.innerHeight);
+
+             // position and point the camera
+             camera.position.set(-36, 24, 36);
+             camera.up = new THREE.Vector3(0, 1, 0);
+             camera.lookAt(scene.position);
+
+            
+            
+
+             // add the output of the renderer to the html element
+             $('body').append(renderer.domElement);
+
+             var step = 0;
+
+
+             render();
+
+
+             function render() {
+                //trackballControls.update();
+                 requestAnimationFrame(render);
+                 renderer.render(scene, camera);
+             }
+
+             function onDocumentMouseDown(event) {
+                 //event.preventDefault();
+                 var vector = new THREE.Vector3((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1, 0.5);
+                 projector.unprojectVector(vector, camera);
+                 var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+                 var intersects = raycaster.intersectObject(button);
+                  if (intersects.length > 0) {
+
+                      loadPDB();
+                        setTimeout(function(){
+                        addAtomsToScene();
+                         }
+                          ,100);
+                      scene.remove(button);
+                      
+                      
+
+
+                 }
+
+             }
+
+            maps = {
+                'H': THREE.ImageUtils.loadTexture("assets/textures/H_texture.png"),
+                'N': THREE.ImageUtils.loadTexture("assets/textures/N_texture.png"),
+                'C': THREE.ImageUtils.loadTexture("assets/textures/C_texture.png"),
+                'O': THREE.ImageUtils.loadTexture("assets/textures/O_texture.png"),
+                'S': THREE.ImageUtils.loadTexture("assets/textures/S_texture.png"),
+                'Cl': THREE.ImageUtils.loadTexture("assets/textures/Cl_texture.png"),
+                'F': THREE.ImageUtils.loadTexture("assets/textures/F_texture.png"),
+                'K': THREE.ImageUtils.loadTexture("assets/textures/K_texture.png"),
+                'P': THREE.ImageUtils.loadTexture("assets/textures/P_texture.png"),
+
+            };  
+
+             // add all atoms to scene
+             function addAtomsToScene() {
+                 arraySprite = new Array();
+                 if(clearedFile === undefined) {
+                    alert('The PDB file typed does not exist!');
+                 }
+                 else 
+                 for (var i = 0; i < clearedFile.length; ++i) {
+                         var crateMaterial = new THREE.SpriteMaterial({
+                         map: getMaps(clearedFile[i].type),
+                         useScreenCoordinates: false,
+                         
+                     });
+                     
+                     var radius = setDimension(clearedFile[i].type);
+                     var sprite = new THREE.Sprite(crateMaterial);
+                     sprite.position.set(clearedFile[i].x, clearedFile[i].y, clearedFile[i].z);
+                     sprite.scale.set(radius, radius, 1.0);
+
+                     // add single sprite to a sprite array
+                     arraySprite.push(sprite);
+
+                     atoms.add(sprite);
+                 }
+                 scene.add(atoms);
+             }
+
+              function createMesh(geom, imageFile, bump) {
+                 var texture = THREE.ImageUtils.loadTexture("assets/textures/" + imageFile)
+                 geom.computeVertexNormals();
+                 var mat = new THREE.MeshPhongMaterial();
+                 mat.map = texture;
+
+                 var mesh = new THREE.Mesh(geom, mat);
+                 return mesh;
+             }
+
+             function getMaps(type) {
+                return maps[type] || THREE.ImageUtils.loadTexture("assets/textures/neutralTexture.png");
+             }
+         });
+
+      </script>
+
+      </body>
+      </head>
+    </html>
