@@ -141,7 +141,7 @@
           var radius = radii[atom.type] || radii._;
           var sprite = new THREE.Sprite(material);
           sprite.position.set(atom.x, atom.y, atom.z);
-          sprite.scale.set(radius*1.5, radius*1.5, 1.0);
+          sprite.scale.set(radius*2, radius*2, 1.0);
           scene.add(sprite);
         });
       }
