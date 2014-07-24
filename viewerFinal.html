@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>PDB Viewer</title>
+    <style>
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        background-color: #fff;
+        overflow: hidden;
+      }
+      #controls {
+        position: absolute;
+        margin: 5px;
+      }
+      input[type="button"] {
+        border: 0;
+        border-radius: 0;
+        background-color: #CCC;
+        padding: 10px;
+        font-size: 16px;
+        color: #333;
+      }
+    </style>
+   </head>
+   <body>
+    <div id="controls">
+      <input id="info" type="button" value="Info">
+      <input id="insert" type="button" value="New PDB">
+      <input id="reload" type="button" value="Reload">
+    </div>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> 
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r67/three.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+    <script src="assets/libs/THREEx.WindowResize.js"></script>
+    <script src="assets/libs/TrackballControls.js"></script>
+    <script src="assets/libs/builder.js"></script>
+    <script src='parserVDW.js'></script>
+    <script>
+    $(function () {
+      $('#info').on('click', showInfo);
+      $('#insert').on('click', loadPDB);
+      $('#reload').on('click', reload);
+
+      function showInfo() {
+        window.alert([
+          'Colors',
+          'S => Yellow',
+          'N => Blue',
+          'C => Black',
+          'O => Red',
+          'H => Gray',
+          'Cl => Green', 
+          'F => Light Blue',
+          'K => Lilac',
+          'P => Orange'
+        ].join('\n'));
+      };
+
+      function loadPDB() {
+        var id = prompt('insert PDB Id');
+        var base = 'http://rcsb.org/pdb/files/';
+        var ext = '.pdb';
+        var uri = base + id + ext;
+
+        $.get(uri)
+          .done(function(response) {
+            var atoms = clear(response);
+            addAtomsToScene(atoms);
+          })
+          .fail(function() {
+            alert('PDB ' + id + ' DOES NOT EXIST');
+          });
+      }
+
+      function reload () {
+        window.location.reload(true);
+      }
+
+      var scene = new THREE.Scene();
+      var atoms = new THREE.Object3D();
+      
+      var axisHelper = new THREE.AxisHelper(1);
+      scene.add(axisHelper);
+
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+      var aspect = width / height;
+      var camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100000);
+      camera.position.set(40, 40, 40);
+      camera.up = new THREE.Vector3(0, 1, 0);
+      camera.lookAt(scene.position);
+
+      var renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(new THREE.Color(0xffffff));
+      renderer.setSize(width, height);
+      document.body.appendChild(renderer.domElement);
+
+      THREEx.WindowResize(renderer, camera);
+
+      var trackballControls = new THREE.TrackballControls(camera, renderer.domElement);
+     
+      var maps = {
+        'H': THREE.ImageUtils.loadTexture("assets/textures/H_texture.png"),
+        'N': THREE.ImageUtils.loadTexture("assets/textures/N_texture.png"),
+        'C': THREE.ImageUtils.loadTexture("assets/textures/C_texture.png"),
+        'O': THREE.ImageUtils.loadTexture("assets/textures/O_texture.png"),
+        'S': THREE.ImageUtils.loadTexture("assets/textures/S_texture.png"),
+        'Cl': THREE.ImageUtils.loadTexture("assets/textures/Cl_texture.png"),
+        'F': THREE.ImageUtils.loadTexture("assets/textures/F_texture.png"),
+        'K': THREE.ImageUtils.loadTexture("assets/textures/K_texture.png"),
+        'P': THREE.ImageUtils.loadTexture("assets/textures/P_texture.png"),
+        '_': THREE.ImageUtils.loadTexture("assets/textures/g.png")
+      };
+
+      radii = {
+        'H': 1.20,
+        'N': 1.55,
+        'C': 1.70,
+        'O': 1.52,
+        'S': 1.80,
+        'Cl': 1.75,
+        'F': 1.47,
+        'K': 2.75,
+        'P': 1.80,
+        '_': 1.00
+      };
+     
+      // add all atoms to scene
+      function addAtomsToScene(atoms) {
+        atoms.forEach(function (atom) {
+          var material = new THREE.SpriteMaterial({
+            map: maps[atom.type] || maps._,
+            useScreenCoordinates: false,
+          });
+          var radius = radii[atom.type] || radii._;
+          var sprite = new THREE.Sprite(material);
+          sprite.position.set(atom.x, atom.y, atom.z);
+          sprite.scale.set(radius*2, radius*2, 1.0);
+          scene.add(sprite);
+        });
+      }
+
+      function render() {
+        trackballControls.update();
+        requestAnimationFrame(render);
+        renderer.render(scene, camera);
+      }
+
+      render();
+
+    });
+    </script>
+  </body>
+</html>
